@@ -1,255 +1,534 @@
-import numpy as np
-from sklearn import linear_model, datasets
+% 
+% alpha_min = 0.7;
+% alpha_max = 2.2;
+% alpha_step = 0.1;
+% beta_min = 15;
+% beta_max = 30;
+% beta_step = 0.5;
+% [simW, simV] = Simulate_traffic(alpha_min, alpha_max, alpha_step, beta_min, beta_max , beta_step);
+% 
+% v_0 = 7.1246;
+% w_0 = 11.4591;
+% cost =zeros(length(simW),length(simW(:,1)));
+% for i = 1:length(simW)
+%     for j = 1:length(simW(:,1))
+%     cost(i,j) = compute_cost(simV(i,j),simW(i,j));
+%     disp(size(cost))
+%     end
+% end
+% 
+% fig = figure;
+% surf(simV,simW, cost);
+% 
+% w_fig = figure;
+% surf(beta_min:beta_step:beta_max, alpha_min:alpha_step:alpha_max, simW)
+% v_fig = figure;
+% surf(beta_min:beta_step:beta_max, alpha_min:alpha_step:alpha_max, simV)
+% print(w_fig, 'figures/wave_figure_2', '-dpng')
+% print(v_fig, 'figures/vel_figure_2', '-dpng')
 
-def deleteoutliers(a,alpha,rep):
-    # [B, IDX, OUTLIERS] = DELETEOUTLIERS(A, ALPHA, REP)
-    #
-    # For input vector A, returns a vector B with outliers (at the significance
-    # level alpha) removed. Also, optional output argument idx returns the
-    # indices in A of outlier values. Optional output argument outliers returns
-    # the outlying values in A.
-    #
-    # ALPHA is the significance level for determination of outliers. If not
-    # provided, alpha defaults to 0.05.
-    #
-    # REP is an optional argument that forces the replacement of removed
-    # elements with NaNs to presereve the length of a. (Thanks for the
-    # suggestion, Urs.)
-    #
-    # This is an iterative implementation of the Grubbs Test that tests one
-    # value at a time. In any given iteration, the tested value is either the
-    # highest value, or the lowest, and is the value that is furthest
-    # from the sample mean. Infinite elements are discarded if rep is 0, or
-    # replaced with NaNs if rep is 1 (thanks again, Urs).
-    #
-    # Appropriate application of the test requires that data can be reasonably
-    # approximated by a normal distribution. For reference, see:
-    # 1) "Procedures for Detecting Outlying Observations in Samples," by F.E.
-    #    Grubbs; Technometrics, 11-1:1--21; Feb., 1969, and
-    # 2) _Outliers in Statistical Data_, by V. Barnett and
-    #    T. Lewis; Wiley Series in Probability and Mathematical Statistics;
-    #    John Wiley & Sons; Chichester, 1994.
-    # A good online discussion of the test is also given in NIST's Engineering
-    # Statistics Handbook:
-    # http://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm
-    #
-    # ex:
-    # [B,idx,outliers] = deleteoutliers([1.1 1.3 0.9 1.2 -6.4 1.2 0.94 4.2 1.3 1.0 6.8 1.3 1.2], 0.05)
-    #    returns:
-    #    B = 1.1000    1.3000    0.9000    1.2000    1.2000    0.9400    1.3000    1.0000    1.3000    1.2000
-    #    idx =  5     8    11
-    #    outliers = -6.4000    4.2000    6.8000
-    #
-    # ex:
-    # B = deleteoutliers([1.1 1.3 0.9 1.2 -6.4 1.2 0.94 4.2 1.3 1.0 6.8 1.3 1.2
-    # Inf 1.2 -Inf 1.1], 0.05, 1)
-    # returns:
-    # B = 1.1000  1.3000  0.9000  1.2000  NaN  1.2000  0.9400  NaN  1.3000  1.0000  NaN  1.3000  1.2000  NaN  1.2000  NaN  1.1000
-    # Written by Brett Shoelson, Ph.D.
-    # shoelson@helix.nih.gov
-    # 9/10/03
-    # Modified 9/23/03 to address suggestions by Urs Schwartz.
-    # Modified 10/08/03 to avoid errors caused by duplicate "maxvals."
-    #    (Thanks to Valeri Makarov for modification suggestion.)
+%Gradient Descent
+tuple1 = micro_model_human_driver_behavior_circular(0.45,20);
+tuple2 = micro_model_human_driver_behavior_circular(0.5,20);
+tuple3 = micro_model_human_driver_behavior_circular(0.55,20);
+tuple4 = micro_model_human_driver_behavior_circular(0.5,19);
+tuple5 = micro_model_human_driver_behavior_circular(0.5,21);
+disp(tuple1)
+disp(tuple2)
+disp(tuple3)
+disp(tuple4)
+disp(tuple5)
 
-    if nargin == 1:
-        alpha = 0.05;
-        rep = 0;
-    elif nargin == 2:
-        rep = 0;
-    #elif nargin == 3:
-        #if not ismember(rep,[0 1]):
-            #error('Please enter a 1 or a 0 for optional argument rep.')  
-    elif nargin > 3:
-        error('Requires 1,2, or 3 input arguments.');
-    
+close all 
+clear all
+rng(1000);
+alpha = 1.7;
+beta = 20;
+tuple = micro_model_human_driver_behavior_circular(alpha, beta);
+disp(tuple)
+v_0 = 8.1246;
+w_0 = 13.4591;
 
-    if isempty(alpha):
-        alpha = 0.05;
-
-
-    b = a;
-    #b(isinf(a)) = NaN;
-
-    #Delete outliers:
-    outlier = 1;
-    while outlier:
-        tmp = b(~isnan(b));
-        meanval = mean(tmp);
-        maxval = tmp(find(abs(tmp-mean(tmp))==max(abs(tmp-mean(tmp)))));
-        maxval = maxval(1);
-        sdval = std(tmp);
-        tn = abs((maxval-meanval)/sdval);
-        critval = zcritical(alpha,length(tmp));
-        outlier = tn > critval;
-        if outlier:
-            tmp = find(a == maxval);
-            #b(tmp) = NaN;
-
-    if nargout >= 2:
-        idx = find(isnan(b));
-
-    if nargout > 2:
-        outliers = a(idx);
-
-    #if not rep:
-        #b=b(not isnan(b));
-    
-    return  [b, idx, outliers]
-
-def zcritical(alpha,n):
-    #ZCRIT = ZCRITICAL(ALPHA,N)
-    #Computes the critical z value for rejecting outliers (GRUBBS TEST)
-    tcrit = tinv(alpha/(2*n),n-2);
-    zcrit = (n-1)/sqrt(n)*(sqrt(tcrit^2/(n-2+tcrit^2)));
-    return zcrit
-
-
-def identify_wave(velocity):
-    standard_deviation = std2(velocity);    
-    return standard_deviation
-
-
-def get_traffic_speed(trajectory, time):
-    #function to get the traffic speed in the model.
-    #V = get_traffic_speed(trajectory) returns number which is the traffic
-    #speed of this model simulation
-    row,col=size(trajectory); # get the size of the input matrix
-    sum=0; # initialize the sum of distance vehicles covered
-    for i in range(1,col+1):      #loop over the columns of the matrix
-        sum = sum + (trajectory(end,i)-trajectory(1,i));
-        #sum up the distance covered
-
-    avg = sum / col; # divide total distance by total number of vehicles
-    velocity = avg / time;  #divide by time to get velocity.
-    return velocity
-
-def get_wave_speed(trajectory, dt):
-    [rows,cols] = size(trajectory);
-    velocity = zeros(rows, cols);
-    for col in range(1,cols+1):  # loop over the columns
-        for row in (1,rows+1): # loop over the rows
-            velocity[row, col] = (trajectory(min(row+1,rows), col)- trajectory(max(row-1, 1), col))/(dt);
-                #Use finite difference formula of first order derivative to compute the accelaration of each step.
-    [rows, cols] = size(velocity);
-    col=cols;        # Start from the last vehicle
-    i=2;             # Start from the second row
-    waves= [];       # Keep track of all the waves.
-    time = [];       # Array for time storage
-    position = [];   # Array for position storage
-    wave_speeds = [];
-    fig_count = 1;
-    while(i<=rows):
-        if((velocity(i, col) < velocity(max(i-1,1),col) and velocity(i,col)<velocity(min(i+1, cols), col) )):
-            #check for local minimum of velocity
-            time=[time, dt * i];    # append time
-            position = [position, trajectory(i , col )]; #append position
-            col = col - 1;  #move to the next column
-            if col < 1:     #if the finish for all vehicles break the loop
-                col = cols; # Start with the first vehicle which is the last column
-                bls = robustfit(time, position);    # do robust linear regression to the time and position data points collected
-
-                #---------------------------
-                # computation of the linear regression lines on the plot 
-                #x = time(1)-10:0.1:time(end)+10;    
-                #y = bls(2)*x+bls(1);
-                #---------------------------
-
-                wave_speeds = [wave_speeds, bls(2)];        # store the computed wave speed for this iteration
-
-                #---------------------------------
-                fig_count = fig_count+1;
-                time = [];
-                position = [];
-            
-        i=i+1;  # go to next row in space
+v_sim = tuple(1);
+w_sim = tuple (2);
+tuple_origin = tuple;
+current_cost = (v_0-v_sim)^2 + (w_0-w_sim)^2;
+kappa = 0.001;
+alphas = [];
+betas =[];
+velocities = [];
+wave_speeds = [];
+d_alpha=[];
+d_beta =[];
+cost = [];
+disp(tuple);
+for iter= 1:1000
+    disp(iter);
+    disp(tuple);
+    rng(1000);
+    tuple_delta_alpha = micro_model_human_driver_behavior_circular(alpha+0.005, beta);
+    rng(1000);
+    tuple_delta_beta = micro_model_human_driver_behavior_circular(alpha, beta+0.01);
+    rng(1000);
+    dloss_dalpha = (compute_cost(tuple_delta_alpha(1), tuple_delta_alpha(2))-current_cost)/(0.005);
+    rng(1000);
+    dloss_dbeta = (compute_cost(tuple_delta_beta(1), tuple_delta_beta(2))-current_cost)/(0.01);
+    rng(1000);
+    if iter~=1
+        alpha = alpha - kappa * dloss_dalpha;
+        disp("the gradient for alpha is "+dloss_dalpha)
+        beta = beta - kappa * dloss_dbeta;
+        disp("the gradient for beta is " +dloss_dbeta)
     end
-    wave_speeds = wave_speeds(wave_speeds <-5);
-    wave_speeds, a, b = deleteoutliers(wave_speeds, 0.1); #delete outliers of wavespeeds
+    tuple_optimum = micro_model_human_driver_behavior_circular(alpha, beta);
+    rng(1000);
+    current_cost = compute_cost (tuple_optimum(1), tuple_optimum(2));
+    plot(alpha, beta)
+    d_alpha = [d_alpha, dloss_dalpha];
+    d_beta = [d_beta, dloss_dbeta];
+    alphas = [alphas, alpha];
+    betas = [betas, beta];
+    velocities = [velocities, tuple_optimum(1)];
+    wave_speeds = [wave_speeds , tuple_optimum(2) ];
+    cost = [cost, current_cost];
+    disp("The current velocity and wave speed is "+tuple_optimum)
+    disp("The current alpha is "+alpha)
+    disp("The current beta is "+beta)
+end
+fig = figure;
+plot([1:1000],alphas, 'b*')
+ylabel('Alpha')
+xlabel('Iterations')
+fig2 = figure;
+plot([1:1000],betas, 'b*')
+ylabel('Beta')
+xlabel('Iterations')
+fig3 = figure;
+plot([1:1000], wave_speeds, 'r*')
+xlabel('Iterations')
+ylabel('Wave_speed')
+fig4 = figure;
+plot([1:1000], velocities, 'r*')
+xlabel('Iterations')
+ylabel('Velocity')
+fig5=figure
+plot(wave_speeds, velocities, 'r*')
+xlabel('Wave_speeds')
+ylabel('Velocity')
+fig6=figure
+plot(alphas, betas, 'r*')
+xlabel('Alphas')
+ylabel('Betas')
+fig7 = figure;
+plot(d_alpha, d_beta, 'b*')
+ylabel('Dalpha')
+xlabel('Dbeta')
+fig8 = figure;
+surf(alphas, betas, cost);
+disp(tuple_optimum);
+disp(tuple_origin);
 
-    return abs(mean(wave_speeds)); # return the final answer
+%Phase diagrams
 
-def randntrunc(m,n,c):
-    #RANDNTRUNC Truncated normally distributed pseudorandom numbers.
-    #   R = RANDNTRUNC(M,N,C) returns an M-by-N matrix containing
-    #   pseudorandom values drawn from the standard normal
-    #   distribution, with samples larger (in magnitude) than C
-    #   discarded.
-    if nargin<3:
-        c = inf
-    R = randn(m,n); # array of random samples
-    while True: # loop until stopping criterion
-        ind = abs(R)>c; # indices of unacceptable samples
-        if ~nnz(ind):
-            break  # if everything acceptable, break
+% tuple = micro_model_human_driver_behavior_circular(2.0734, 16.5194);
+% clear all
+% close all
+% rng(1000);
+% %tuple=micro_model_human_driver_behavior_circular(0.8, 20);
+% [A,B] = meshgrid(0.8:0.1:4.8,10:0.5:30);
+% U = zeros(size(A));  % in delta_alpha direction
+% V = zeros(size(B));  % in delta_beta direction
+% alphas = [];
+% betas = [];
+% dalphas = [];
+% dbetas = [];
+% for i = 1:length(A)
+%     for j = 1:length(B)
+%         rng(1000);
+%         alpha = A(i,j);
+%         beta = B(i,j);
+%         current_tuple = micro_model_human_driver_behavior_circular(alpha, beta);
+%         current_cost = compute_cost (current_tuple(1), current_tuple(2));
+%         tuple_delta_alpha = micro_model_human_driver_behavior_circular(alpha+0.05, beta);
+%         tuple_delta_beta = micro_model_human_driver_behavior_circular(alpha, beta+0.1);
+%         dloss_dalpha = (compute_cost(tuple_delta_alpha(1), tuple_delta_alpha(2))-current_cost)/(0.05);
+%         dloss_dbeta = (compute_cost(tuple_delta_beta(1), tuple_delta_beta(2))-current_cost)/(0.1);
+%         U(i, j) = dloss_dalpha;
+%         V(i, j) = dloss_dbeta;
+%         alphas = [alphas, alpha];
+%         betas = [betas, beta];
+%         dalphas = [dalphas, dloss_dalpha];
+%         dbetas = [dbetas, dloss_dbeta];
+%     end
+% end
+% save('Gradient.mat', 'alphas', 'betas','dalphas','dbetas');
+% figure
+% 
+% quiver(A,B,U,V)
 
-        return randn(nnz(ind),1)
-        #R(ind) =  randn(nnz(ind),1); # resample unacceptable entries
 
-def micro_model_human_driver_behavior_circular(alpha , beta ):
-    L = 230; # length of circular road [m]
-    l = 4.82; # length of each vehicle [m]
-    n = 22; # number of vehicles
-    tf = 200; # final time of trajectory computation [s]
-    dt_plot = 0.25; # size of plotting steps [s]
-    
-    Vm = 15;
-    d0 = 2.23; # reference vehicle distance [m]
-    V = lambda d : (tanh(d/d0-2)+tanh(2))/(1+tanh(2))*Vm; # optimal vel. fct. [m/s]
-    # Note: Vm, d0 chosen s.t. initial velocity at equilibirum point.
-    a = alpha; # optimal velocity strength [1/s]
-    b = beta; # follow-the-leader strength [m^nu/s]
-    nu = 2; # power of distance in denominator of follow-the-leader term
-    dt_noise = 2; # time between two applications of noise [s]
-    sigma = .25; # total amount of noise per second [m/s^2]
-    
-    d = (L/n)-l; # initial distance between adjacent vehicles
-    p = np.linspace(0,(d+l)*(n-1),n) # initial positions of vehicles
-    v = p*0+V(d); # initial velocities of vehicles
-    dV = lambda d : (V(d+1e-7)-V(d-1e-7))/2e-7; # slope of opt. vel. fct. at equil.
-    
-    dist = lambda x: np.append(x[3:end:2],x(1)+L, axis = 0)-x[1:end:2]-l; # distance between vehicles
-    R = lambda ~,x : reshape(np.transpose([x[2:end:2], b*(x([4:2:end][2])-x[2:end:2]/((dist(x))^nu))+a*(V(dist(x))-x[2:end:2])]),[],1);
-    # ODE system # side function # right hand
-    
-    #####
-    #Computation of Model
-    #####
-    
-    ns = ceil(tf/dt_noise); # number of intervals (between them apply noise)
-    sigma_dt = sqrt(dt_noise)*sigma; # amount of noise per interval
-    x0 = np.transpose(reshape([p;v],[],1)); # initial state vector
-    t = 0; # initialize time vector
-    Y = x0; # initialize solution matrix
-    
-    for j in range(1,ns+1): # loop over intervals
-        t_start = (j-1)*dt_noise; # start time of this interval
-        t_end = min(j*dt_noise,tf); # end time of this interval
-        dt_j = t_end-t_start; # length of this interval
-        t_j = linspace(t_start,t_end,ceil(dt_j/dt_plot)+1); # int. time vector
-        x0 = Y(end,:);          #  new initial condition is final state from sol. matrix
-        x0(2:2:end) = x0(2:2:end)+randntrunc(1,n,3)*sigma_dt; # add noise
-        x0(2:2:end) = max(x0(2:2:end),0); # cap new velocity from below by 0
-        [~,Yj] = ode45(R,t_j,x0); # compute vehicle trajectories in interval
-        if length(t_j)==2: # if time interval t_j has only 2 entries,
-            Yj = Yj([1 end],:); # use only first and last solution values
-        t = [t,t_j(2:end)]; # append time vector
-        Y = [Y; Yj(2:end,:)]; # append solution matrix with new interval data
+
+function cost = compute_cost (v, w)
+    v_0 = 8.1246;
+    w_0 = 13.4591;
+    cost = (v-v_0)^2 + (w-w_0)^2;
+end
+
+
+function [W, V] = Simulate_traffic(alpha_lobd, alpha_upbd, step_a, beta_lobd, beta_upbd, step_b)
+m = int32(((alpha_upbd-alpha_lobd)/step_a)+1); % calculate the dimension of the resulting matrix
+n = int32(((beta_upbd-beta_lobd)/step_b)+1);
+Matrix_v = zeros(m,n);
+Matrix_w = zeros(m,n);
+Matrix_w_filtered = zeros(m,n);
+index_i = 1;
+for i=alpha_lobd:step_a:alpha_upbd
+    index_j = 1;
+    for j=beta_lobd:step_b:beta_upbd
+        sum_v = 0;
+        sum_w = 0;
+        outlier = [];
+        for k=1:10
+            A = micro_model_human_driver_behavior_circular(i, j);
+            sum_v = sum_v + A(1);
+            sum_w = sum_w + A(2);
+            outlier = [outlier, A(2)];
+        end
+        Matrix_v(index_i, index_j) = sum_v / 10;
+        [sum_w,~,~] =  deleteoutliers(sum_w, 0.1);
+        Matrix_w_filtered(index_i, index_j) = mean(sum_w);
         
         
-    P = mod([Y(:,1:2:end),Y(:,1:2:end)+L,Y(:,1:2:end)+2*L],3*L)-L;   # create
-    P(P<-.5*L|P>1.5*L) = nan;        # copies of trajectories above and below
-    
-    veh_pos = Y(:,1:2:end); # positions of vehicles
-    veh_dist = [veh_pos(:,2:end),veh_pos(:,1)+L]-veh_pos-l;
-    min_dist = min(veh_dist,[],2); # minimum distance over time
-    vel = Y(:,2:2:end); # velocities of vehicles
-    min_vel = min(vel,[],2); # minimum velocity over time
-    max_vel = max(vel,[],2);# maximum velocity over time
-    
-    v = get_traffic_speed(veh_pos(200:end,:) , tf);
-    w = get_wave_speed(veh_pos, dt_plot);
+        index_j =index_j + 1;
+        
+    end
+    index_i = index_i +1;
+end
+V = Matrix_v;
+W = Matrix_w_filtered;
+end
 
-    tupl = [v,w];
+function tuple = micro_model_human_driver_behavior_circular(alpha, beta)
+%   Considers the Aw-Klar-Materne-Rascle model, which is a
+%   combination of the follow-the-leader model and the
+%   optimal-velocity model:
+%      x_j'' = b*(x_{j+1}'-x_j')/(x_{j+1}-x_j)^2
+%            + a*(V(x_{j+1}-x_j)-x_j')
+%   The model is initialized with a uniform flow initial state.
+%   Over the course of the evolution, random perturbations are added
+%   to the vehicle velocities in periodic intervals. The trajectories
+%   of all vehicles are plotted. The parameters of the model (and the
+%   noise) are found so that the results reproduce the characteristic
+%   behavior of a true traffic experiment (2008).
+%   All units are standard SI units.
+%
+%   (C) 2015/06/24 by Benjamin Seibold and Hannah Pohlmann
 
-    return tupl
+%------------------------------------------------------------------------
+% Parameters defining geometry (in space and time)
+%------------------------------------------------------------------------
+L = 230; % length of circular road [m]
+l = 4.82; % length of each vehicle [m]
+n = 22; % number of vehicles
+tf = 200; % final time of trajectory computation [s]
+dt_plot = 0.25; % size of plotting steps [s]
+%------------------------------------------------------------------------
+% Parameters defining the model
+%------------------------------------------------------------------------
+%Vm = 35/3.6; % maximum velocity for optimal velocity function [m/s]
+Vm = 15;
+d0 = 2.23; % reference vehicle distance [m]
+V = @(d) (tanh(d/d0-2)+tanh(2))/(1+tanh(2))*Vm; % optimal vel. fct. [m/s]
+% Note: Vm, d0 chosen s.t. initial velocity at equilibirum point.
+a = alpha; % optimal velocity strength [1/s]
+b = beta; % follow-the-leader strength [m^nu/s]
+nu = 2; % power of distance in denominator of follow-the-leader term
+dt_noise = 2; % time between two applications of noise [s]
+sigma = .25; % total amount of noise per second [m/s^2]
+
+%------------------------------------------------------------------------
+% Derived parameters and functions
+%------------------------------------------------------------------------
+d = (L/n)-l; % initial distance between adjacent vehicles
+p = 0:(d+l):(d+l)*(n-1); % initial positions of vehicles
+v = p*0+V(d); % initial velocities of vehicles
+dV = @(d) (V(d+1e-7)-V(d-1e-7))/2e-7; % slope of opt. vel. fct. at equil.
+%fprintf('Microscopic model (AKMR) on circular road of length %gm.\n',L)
+%fprintf('%d vehicles; space between vehicles: %0.3gm\n',n,d)
+%fprintf(['max. vel.: %0.3gm/s; equil. vel.: V(d) = %0.3gm/s; ',...
+%    'V''(d) = %0.3g/s\n'],Vm,V(d),dV(d))
+dist = @(x) [x(3:2:end);x(1)+L]-x(1:2:end)-l; % distance between vehicles
+R = @(~,x) reshape([x(2:2:end),...                     % ODE system
+    b*(x([4:2:end,2])-x(2:2:end))./((dist(x)).^nu)+... % right hand
+    a*(V(dist(x))-x(2:2:end))]',[],1);                 % side function
+
+%------------------------------------------------------------------------
+% Computation of model
+%------------------------------------------------------------------------
+ns = ceil(tf/dt_noise); % number of intervals (between them apply noise)
+sigma_dt = sqrt(dt_noise)*sigma; % amount of noise per interval
+x0 = reshape([p;v],[],1)'; % initial state vector
+t = 0; % initialize time vector
+Y = x0; % initialize solution matrix
+for j = 1:ns % loop over intervals
+    t_start = (j-1)*dt_noise; % start time of this interval
+    t_end = min(j*dt_noise,tf); % end time of this interval
+    dt_j = t_end-t_start; % length of this interval
+    t_j = linspace(t_start,t_end,ceil(dt_j/dt_plot)+1);% int. time vector
+    x0 = Y(end,:);% new initial condition is final state from sol. matrix
+    x0(2:2:end) = x0(2:2:end)+randntrunc(1,n,3)*sigma_dt; % add noise
+    x0(2:2:end) = max(x0(2:2:end),0); % cap new velocity from below by 0
+    [~,Yj] = ode45(R,t_j,x0); % compute vehicle trajectories in interval
+    if length(t_j)==2 % if time interval t_j has only 2 entries,
+        Yj = Yj([1 end],:); % use only first and last solution values
+    end
+    t = [t,t_j(2:end)]; % append time vector
+    Y = [Y; Yj(2:end,:)]; % append solution matrix with new interval data
+end
+P = mod([Y(:,1:2:end),Y(:,1:2:end)+L,Y(:,1:2:end)+2*L],3*L)-L;   % create
+P(P<-.5*L|P>1.5*L) = nan;        % copies of trajectories above and below
+
+%------------------------------------------------------------------------
+% Output important values
+%------------------------------------------------------------------------
+veh_pos = Y(:,1:2:end); % positions of vehicles
+veh_dist = [veh_pos(:,2:end),veh_pos(:,1)+L]-veh_pos-l;
+min_dist = min(veh_dist,[],2); % minimum distance over time
+%fprintf('Minimum spacing between vehicles: %0.2fm\n',min(min_dist))
+vel = Y(:,2:2:end); % velocities of vehicles
+min_vel = min(vel,[],2); % minimum velocity over time
+max_vel = max(vel,[],2);% maximum velocity over time
+%fprintf('Minimum|maximum vehicle velocities: ')
+%fprintf('%0.2fm/s | %0.2fm/s\n', min(min_vel),max(max_vel));
+
+%------------------------------------------------------------------------
+% Plot vehicle trajectories
+%------------------------------------------------------------------------
+% clf
+% plot(P,t,'b-',P(:,1:n:end),t,'r-') % plot first vehicle in red
+% axis([0 L 0 tf])
+% ylabel('time t [s]'), xlabel('position on road x [m]')
+% title('Vehicle trajectories')
+
+v = get_traffic_speed(veh_pos(200:end,:) , tf);
+w = get_wave_speed(veh_pos, dt_plot);
+%w = 0;
+tuple = [v,w];
+
+end
+%========================================================================
+% Functions
+%========================================================================
+
+function R = randntrunc(m,n,c)
+%RANDNTRUNC Truncated normally distributed pseudorandom numbers.
+%   R = RANDNTRUNC(M,N,C) returns an M-by-N matrix containing
+%   pseudorandom values drawn from the standard normal
+%   distribution, with samples larger (in magnitude) than C
+%   discarded.
+if nargin<3, c = inf; end
+R = randn(m,n); % array of random samples
+while 1 % loop until stopping criterion
+    ind = abs(R)>c; % indices of unacceptable samples
+    if ~nnz(ind), break, end % if everything acceptable, break
+    R(ind) = randn(nnz(ind),1); % resample unacceptable entries
+end
+end
+
+function V = get_traffic_speed(trajectory, time)
+% %function to get the traffic speed in the model.
+% %   V = get_traffic_speed(trajectory) returns number which is the traffic
+% %   speed of this model simulation
+[~ , col]=size(trajectory); % get the size of the input matrix
+sum=0;  % initialize the sum of distance vehicles covered
+for i=1:col       %loop over the columns of the matrix
+    sum = sum + (trajectory(end,i)-trajectory(1,i));
+    %sum up the distance covered
+end
+avg = sum / col; % divide total distance by total number of vehicles
+velocity = avg / time;  % divide by time to get velocity.
+V=velocity; % return velocity
+end
+
+function W = get_wave_speed(trajectory, dt)
+
+[rows,cols] = size(trajectory);
+velocity = zeros(rows, cols);
+
+for col=1:cols  % loop over the columns
+    for row= 1:rows % loop over the rows
+        velocity(row, col) = (trajectory(min(row+1,rows), col)...
+            - trajectory(max(row-1, 1), col))/(dt);
+        %use finite difference formula of first order derivative to
+        %compute the accelaration of each step.
+    end
+end
+
+
+
+
+
+[rows, cols] = size(velocity);
+col=cols;   % start from the last vehicle
+i=2;        % Start from the second row
+waves= []; %Keep track of all the waves.
+time = [];  % array for time storage
+position = [];  % array for position storage
+wave_speeds = [];
+fig_count = 1;
+while(i<=rows)
+    if( (velocity(i, col) < velocity(max(i-1,1), col) && velocity(i,col)<velocity(min(i+1, cols), col) ))
+        %check for local minimum of velocity
+        time=[time, dt * i];    % append time
+        position = [position, trajectory(i , col )]; %append position
+        col = col - 1; % move to the next column
+        if col < 1  % if the finish for all vehicles break the loop
+            col = cols; % Start with the first vehicle which is the last column
+            bls = robustfit(time, position);    % do robust linear regression to the time and position data points collected
+            
+            %---------------------------
+            % computation of the linear regression lines on the plot 
+            x = time(1)-10:0.1:time(end)+10;    
+            y = bls(2)*x+bls(1);
+            %---------------------------
+            
+            wave_speeds = [wave_speeds, bls(2)];        % store the computed wave speed for this iteration
+            
+            %---------------------------------
+            %plot lines
+            
+%             fig = figure;
+%             hold on
+%             plot((1:length(trajectory))./4, trajectory)
+%             plot(time, position, 'b*')
+%             plot(x,y,'r')
+%             save('Trajectory.mat','trajectory')
+%             xlabel('Time (s)')
+%             ylabel('Position (m)')
+%             title('Trajectories and wave regression line');
+            %name = strcat('Trajectoy', num2str(fig_count), '.jpg');
+            %saveas(fig, name);
+            %---------------------------------
+            %reinitialize the time and position array
+            fig_count = fig_count+1;
+            time = [];
+            position = [];
+        end
+    end
+    i=i+1;  % go to next row in space
+end
+wave_speeds = wave_speeds(wave_speeds <-5);
+% disp(wave_speeds)
+[wave_speeds, ~, ~] = deleteoutliers(wave_speeds, 0.1); %delete outliers of wavespeeds
+% disp(wave_speeds)
+W = abs(mean(wave_speeds)); % return the final answer
+end
+
+function [b,idx,outliers] = deleteoutliers(a,alpha,rep)
+% [B, IDX, OUTLIERS] = DELETEOUTLIERS(A, ALPHA, REP)
+%
+% For input vector A, returns a vector B with outliers (at the significance
+% level alpha) removed. Also, optional output argument idx returns the
+% indices in A of outlier values. Optional output argument outliers returns
+% the outlying values in A.
+%
+% ALPHA is the significance level for determination of outliers. If not
+% provided, alpha defaults to 0.05.
+%
+% REP is an optional argument that forces the replacement of removed
+% elements with NaNs to presereve the length of a. (Thanks for the
+% suggestion, Urs.)
+%
+% This is an iterative implementation of the Grubbs Test that tests one
+% value at a time. In any given iteration, the tested value is either the
+% highest value, or the lowest, and is the value that is furthest
+% from the sample mean. Infinite elements are discarded if rep is 0, or
+% replaced with NaNs if rep is 1 (thanks again, Urs).
+%
+% Appropriate application of the test requires that data can be reasonably
+% approximated by a normal distribution. For reference, see:
+% 1) "Procedures for Detecting Outlying Observations in Samples," by F.E.
+%    Grubbs; Technometrics, 11-1:1--21; Feb., 1969, and
+% 2) _Outliers in Statistical Data_, by V. Barnett and
+%    T. Lewis; Wiley Series in Probability and Mathematical Statistics;
+%    John Wiley & Sons; Chichester, 1994.
+% A good online discussion of the test is also given in NIST's Engineering
+% Statistics Handbook:
+% http://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm
+%
+% ex:
+% [B,idx,outliers] = deleteoutliers([1.1 1.3 0.9 1.2 -6.4 1.2 0.94 4.2 1.3 1.0 6.8 1.3 1.2], 0.05)
+%    returns:
+%    B = 1.1000    1.3000    0.9000    1.2000    1.2000    0.9400    1.3000    1.0000    1.3000    1.2000
+%    idx =  5     8    11
+%    outliers = -6.4000    4.2000    6.8000
+%
+% ex:
+% B = deleteoutliers([1.1 1.3 0.9 1.2 -6.4 1.2 0.94 4.2 1.3 1.0 6.8 1.3 1.2
+% Inf 1.2 -Inf 1.1], 0.05, 1)
+% returns:
+% B = 1.1000  1.3000  0.9000  1.2000  NaN  1.2000  0.9400  NaN  1.3000  1.0000  NaN  1.3000  1.2000  NaN  1.2000  NaN  1.1000
+% Written by Brett Shoelson, Ph.D.
+% shoelson@helix.nih.gov
+% 9/10/03
+% Modified 9/23/03 to address suggestions by Urs Schwartz.
+% Modified 10/08/03 to avoid errors caused by duplicate "maxvals."
+%    (Thanks to Valeri Makarov for modification suggestion.)
+
+if nargin == 1
+    alpha = 0.05;
+    rep = 0;
+elseif nargin == 2
+    rep = 0;
+elseif nargin == 3
+    if ~ismember(rep,[0 1])
+        error('Please enter a 1 or a 0 for optional argument rep.')
+    end
+elseif nargin > 3
+    error('Requires 1,2, or 3 input arguments.');
+end
+
+if isempty(alpha)
+    alpha = 0.05;
+end
+
+b = a;
+b(isinf(a)) = NaN;
+
+%Delete outliers:
+outlier = 1;
+while outlier
+    tmp = b(~isnan(b));
+    meanval = mean(tmp);
+    maxval = tmp(find(abs(tmp-mean(tmp))==max(abs(tmp-mean(tmp)))));
+    maxval = maxval(1);
+    sdval = std(tmp);
+    tn = abs((maxval-meanval)/sdval);
+    critval = zcritical(alpha,length(tmp));
+    outlier = tn > critval;
+    if outlier
+        tmp = find(a == maxval);
+        b(tmp) = NaN;
+    end
+end
+if nargout >= 2
+    idx = find(isnan(b));
+end
+if nargout > 2
+    outliers = a(idx);
+end
+if ~rep
+    b=b(~isnan(b));
+end
+end
+
+function zcrit = zcritical(alpha,n)
+%ZCRIT = ZCRITICAL(ALPHA,N)
+% Computes the critical z value for rejecting outliers (GRUBBS TEST)
+tcrit = tinv(alpha/(2*n),n-2);
+zcrit = (n-1)/sqrt(n)*(sqrt(tcrit^2/(n-2+tcrit^2)));
+end
+
+function standard_deviation = identify_wave(velocity)
+    standard_deviation = std2(velocity);
+end
